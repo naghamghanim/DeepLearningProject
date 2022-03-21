@@ -1,6 +1,8 @@
 import torch
 import os
 import argparse
+import logging
+import sys
 from torch.utils.data import DataLoader
 from comp9312.classify.model import BertClassifier
 from comp9312.classify.trainer import BertTrainer
@@ -63,6 +65,14 @@ def parse_args():
 
 
 def main(args):
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[logging.StreamHandler(sys.stdout)],
+        format="%(levelname)s\t%(name)s\t%(asctime)s\t%(message)s",
+        datefmt="%a, %d %b %Y %H:%M:%S",
+        force=True
+    )
+
     # Set the seed for randomization
     set_seed(args.seed)
 
@@ -81,7 +91,7 @@ def main(args):
     train_dataloader, val_dataloader, test_dataloader = [DataLoader(
         dataset=dataset,
         shuffle=shuffle[i],
-        batch_size=args.batxch_size,
+        batch_size=args.batch_size,
         num_workers=args.num_workers,
         collate_fn=dataset.collate_fn,
     ) for i, dataset in enumerate(datasets)]

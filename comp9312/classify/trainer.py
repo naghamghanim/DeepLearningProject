@@ -14,12 +14,10 @@ class BertTrainer:
         model=None,
         max_epochs=50,
         optimizer=None,
-        scheduler=None,
         loss=None,
         train_dataloader=None,
         val_dataloader=None,
         test_dataloader=None,
-        log_interval=10,
         output_path=None,
         clip=5,
         patience=5
@@ -30,9 +28,7 @@ class BertTrainer:
         self.val_dataloader = val_dataloader
         self.test_dataloader = test_dataloader
         self.optimizer = optimizer
-        self.scheduler = scheduler
         self.loss = loss
-        self.log_interval = log_interval
         self.output_path = output_path
         self.clip = clip
         self.patience = patience
@@ -44,10 +40,7 @@ class BertTrainer:
         Save model checkpoint
         :return:
         """
-        filename = os.path.join(
-            self.output_path,
-            "checkpoint_{}.pt".format(self.epoch),
-        )
+        filename = os.path.join(self.output_path, "model.pt")
 
         checkpoint = {
             "model": self.model.state_dict(),
@@ -97,8 +90,8 @@ class BertTrainer:
     def save_predictions(self, segments, output_filename):
         with open(output_filename, "w") as fh:
             w = csv.writer(fh, delimiter="\t")
-            rows = [["Text", "Label"]]
-            rows += [s.__str__() for s in segments]
+            rows = [["Text", "Label", "Prediction"]]
+            rows += [(s.text, s.label, s.pred) for s in segments]
             w.writerows(rows)
 
     def train(self):
@@ -114,12 +107,7 @@ class BertTrainer:
                 self.timestep += 1
                 batch_loss = self.loss(logits, labels)
                 batch_loss.backward()
-
-                # Avoid exploding gradient by doing gradient clipping
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip)
-
                 self.optimizer.step()
-                self.scheduler.step()
                 train_loss += batch_loss.item()
 
                 if self.timestep % 10 == 0:
@@ -198,3 +186,25 @@ class BertTrainer:
                 logits = self.model(subwords, masks)
 
         return subwords, labels, segments, logits
+
+    def eval(self, dataloader):
+        ptos = dataloader.dataset.transform.vocab.get_itos()
+        golds, preds, segments = list(), list(), list()
+        loss = 0
+
+        for batch in dataloader:
+            _, labels, batch_segments, logits = self.classify(batch, is_train=False)
+            batch_loss = self.loss(logits, labels)
+
+            loss += batch_loss
+            preds += torch.argmax(logits, dim=1)
+            segments += batch_segments
+
+        loss /= len(dataloader)
+
+        # Update segments, attach predicted tags to each token
+        for segment, pred in zip(segments, preds):
+            segment.pred = ptos[pred]
+
+        return segments, loss
+
