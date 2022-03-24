@@ -4,10 +4,10 @@ import argparse
 import logging
 import sys
 from torch.utils.data import DataLoader
-from comp9312.classify.model import BertClassifier
-from comp9312.classify.trainer import BertTrainer
-from comp9312.classify.utils import parse_data_files, set_seed
-from comp9312.classify.data import DefaultDataset
+from comp9312.ner.model import BertTagger
+from comp9312.ner.trainer import BertTrainer
+from comp9312.ner.utils import parse_conll_files, set_seed
+from comp9312.ner.data import DefaultDataset
 
 
 def parse_args():
@@ -77,12 +77,12 @@ def main(args):
     set_seed(args.seed)
 
     # Get the datasets and vocab for tags and tokens
-    datasets, vocab = parse_data_files((args.train_path, args.val_path, args.test_path))
+    datasets, vocab = parse_conll_files((args.train_path, args.val_path, args.test_path))
 
     # From the datasets generate the dataloaders
     datasets = [
         DefaultDataset(
-            segments=dataset, vocab=vocab, bert_model=args.bert_model
+            examples=dataset, vocab=vocab, bert_model=args.bert_model
         )
         for dataset in datasets
     ]
@@ -97,8 +97,8 @@ def main(args):
     ) for i, dataset in enumerate(datasets)]
 
     # Initialize the model
-    model = BertClassifier(
-        bert_model=args.bert_model, num_labels=len(vocab), dropout=0.1
+    model = BertTagger(
+        bert_model=args.bert_model, num_labels=len(vocab.tags), dropout=0.1
     )
 
     if torch.cuda.is_available():

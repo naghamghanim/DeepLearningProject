@@ -37,7 +37,7 @@ class BertSeqTransform:
         return torch.LongTensor(subwords), label, mask
 
 
-class Dataset(Dataset):
+class DefaultDataset(Dataset):
     def __init__(
         self,
         segments=None,
