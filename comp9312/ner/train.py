@@ -103,7 +103,7 @@ def main(args):
 
     if torch.cuda.is_available():
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(
-            [str(gpu) for gpu in range(args.num_gpus)]
+            [str(gpu) for gpu in range(len(args.gpus))]
         )
         model = torch.nn.DataParallel(model, device_ids=range(len(args.gpus)))
         model = model.cuda()
