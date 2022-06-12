@@ -42,7 +42,7 @@ class DefaultDataset(Dataset):
         self,
         segments=None,
         vocab=None,
-        bert_model="aubmindlab/bert-base-arabertv2",
+        bert_model="avichr/heBERT",
         max_seq_len=512,
     ):
         """
